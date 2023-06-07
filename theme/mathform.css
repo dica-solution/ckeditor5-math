@@ -33,3 +33,12 @@
 .ck.ck-toolbar-container {
 	z-index: calc(var(--ck-z-modal) + 2);
 }
+
+.ck-math-form input.ck.ck-input.ck-input-text {
+	min-width: 42em; /* default is 18em */
+	width: 100%;
+}
+
+.ck-math-view {
+	max-width: 720px;
+}
