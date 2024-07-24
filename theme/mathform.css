@@ -31,7 +31,7 @@
 }
 
 .ck.ck-toolbar-container {
-	z-index: calc(var(--ck-z-modal) + 2);
+	z-index: calc(var(--ck-z-panel) + 2);
 }
 
 .ck-math-form input.ck.ck-input.ck-input-text {

@@ -1,6 +1,6 @@
 {
   "name": "@isaul32/ckeditor5-math",
-  "version": "38.0.1",
+  "version": "41.4.2",
   "description": "Math feature for CKEditor 5.",
   "keywords": [
     "ckeditor",
@@ -9,42 +9,48 @@
     "ckeditor5-feature",
     "ckeditor5-plugin",
     "ckeditor5-math",
-	"katex"
+    "katex"
   ],
-  "main": "src/index.js",
+  "main": "src/index.ts",
   "dependencies": {
-    "ckeditor5": "^38.0.1"
+    "ckeditor5": "41.4.2"
   },
   "devDependencies": {
-    "@ckeditor/ckeditor5-autoformat": ">=38.0.1",
-    "@ckeditor/ckeditor5-basic-styles": ">=38.0.1",
-    "@ckeditor/ckeditor5-block-quote": ">=38.0.1",
-    "@ckeditor/ckeditor5-code-block": ">=38.0.1",
-    "@ckeditor/ckeditor5-core": ">=38.0.1",
-    "@ckeditor/ckeditor5-editor-classic": ">=38.0.1",
-    "@ckeditor/ckeditor5-essentials": ">=38.0.1",
-    "@ckeditor/ckeditor5-heading": ">=38.0.1",
-    "@ckeditor/ckeditor5-image": ">=38.0.1",
-    "@ckeditor/ckeditor5-indent": ">=38.0.1",
-    "@ckeditor/ckeditor5-inspector": ">=4.1.0",
-    "@ckeditor/ckeditor5-link": ">=38.0.1",
-    "@ckeditor/ckeditor5-list": ">=38.0.1",
-    "@ckeditor/ckeditor5-media-embed": ">=38.0.1",
-    "@ckeditor/ckeditor5-package-tools": "^1.0.0",
-    "@ckeditor/ckeditor5-paragraph": ">=38.0.1",
-    "@ckeditor/ckeditor5-table": ">=38.0.1",
-    "@ckeditor/ckeditor5-theme-lark": ">=38.0.1",
-    "@ckeditor/ckeditor5-upload": ">=38.0.1",
-    "eslint": "^7.32.0",
-    "eslint-config-ckeditor5": "^5.0.1",
+    "@ckeditor/ckeditor5-autoformat": "41.4.2",
+    "@ckeditor/ckeditor5-basic-styles": "41.4.2",
+    "@ckeditor/ckeditor5-block-quote": "41.4.2",
+    "@ckeditor/ckeditor5-code-block": "41.4.2",
+    "@ckeditor/ckeditor5-core": "41.4.2",
+    "@ckeditor/ckeditor5-editor-classic": "41.4.2",
+    "@ckeditor/ckeditor5-essentials": "41.4.2",
+    "@ckeditor/ckeditor5-heading": "41.4.2",
+    "@ckeditor/ckeditor5-image": "41.4.2",
+    "@ckeditor/ckeditor5-indent": "41.4.2",
+    "@ckeditor/ckeditor5-inspector": "4.1.0",
+    "@ckeditor/ckeditor5-link": "41.4.2",
+    "@ckeditor/ckeditor5-list": "41.4.2",
+    "@ckeditor/ckeditor5-media-embed": "41.4.2",
+    "@ckeditor/ckeditor5-package-tools": "^1.1.0",
+    "@ckeditor/ckeditor5-paragraph": "41.4.2",
+    "@ckeditor/ckeditor5-table": "41.4.2",
+    "@ckeditor/ckeditor5-theme-lark": "41.4.2",
+    "@ckeditor/ckeditor5-upload": "41.4.2",
+    "@types/chai": "^4.3.13",
+    "@types/mocha": "^10.0.6",
+    "@types/sinon": "^17.0.3",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint": "^8.57.0",
+    "eslint-config-ckeditor5": "^5.3.2",
     "http-server": "^14.1.0",
     "husky": "^4.2.5",
     "lint-staged": "^10.2.6",
     "stylelint": "^13.13.1",
-    "stylelint-config-ckeditor5": ">=4.1.1"
+    "stylelint-config-ckeditor5": ">=5.3.2",
+    "typescript": "^5.4.2"
   },
   "engines": {
-    "node": ">=16.0.0",
+    "node": ">=18.0.0",
     "npm": ">=5.7.1"
   },
   "author": "Sauli Anto",
@@ -56,24 +62,29 @@
   },
   "files": [
     "lang",
-    "src",
+    "src/**/*.js",
+    "src/**/*.d.ts",
     "build",
     "theme",
     "ckeditor5-metadata.json",
     "CHANGELOG.md"
   ],
   "scripts": {
+    "ts:build": "tsc -p ./tsconfig.release.json",
+    "ts:clear": "npx rimraf \"src/**/*.@(js|d.ts)\"",
     "dll:build": "ckeditor5-package-tools dll:build",
     "dll:serve": "http-server ./ -o sample/dll.html",
-    "lint": "eslint --quiet src/**/*.js",
-    "lint:fix": "eslint --quiet src/**/*.js --fix",
+    "lint": "eslint --quiet --ext .ts src/",
+    "lint:fix": "eslint --quiet --fix --ext .ts src/",
     "stylelint": "stylelint --quiet --allow-empty-input 'theme/**/*.css'",
     "test": "ckeditor5-package-tools test",
     "prepare": "yarn run dll:build",
+    "prepublishOnly": "yarn run ts:build && ckeditor5-package-tools export-package-as-javascript",
+    "postpublish": "yarn run ts:clear && ckeditor5-package-tools export-package-as-typescript",
     "start": "ckeditor5-package-tools start"
   },
   "lint-staged": {
-    "**/*.js": [
+    "**/*.ts": [
       "eslint --quiet"
     ],
     "**/*.css": [

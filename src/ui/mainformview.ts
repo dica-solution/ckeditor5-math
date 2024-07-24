@@ -1,23 +1,65 @@
 import { icons } from 'ckeditor5/src/core';
 import {
-	ButtonView, createLabeledInputText, FocusCycler, LabelView, LabeledFieldView,
-	submitHandler, SwitchButtonView, View, ViewCollection
+	ButtonView,
+	createLabeledInputText,
+	FocusCycler,
+	LabelView,
+	LabeledFieldView,
+	submitHandler,
+	SwitchButtonView,
+	View,
+	ViewCollection,
+	type InputTextView,
+	type FocusableView
 } from 'ckeditor5/src/ui';
-import { FocusTracker, KeystrokeHandler } from 'ckeditor5/src/utils';
+import { Locale, FocusTracker, KeystrokeHandler } from 'ckeditor5/src/utils';
 import { extractDelimiters, hasDelimiters } from '../utils';
 import MathView from './mathview';
 import '../../theme/mathform.css';
+import type { KatexOptions } from '../typings-external';
 
 const { check: checkIcon, cancel: cancelIcon } = icons;
 
+class MathInputView extends LabeledFieldView<InputTextView> {
+	public value: null | string = null;
+	public isReadOnly = false;
+
+	constructor( locale: Locale ) {
+		super( locale, createLabeledInputText );
+	}
+}
+
 export default class MainFormView extends View {
-	constructor( locale, engine, lazyLoad, previewEnabled, previewUid, previewClassName, popupClassName, katexRenderOptions ) {
+	public saveButtonView: ButtonView;
+	public mathInputView: MathInputView;
+	public displayButtonView: SwitchButtonView;
+	public cancelButtonView: ButtonView;
+	public previewEnabled: boolean;
+	public previewLabel?: LabelView;
+	public mathView?: MathView;
+	public override locale: Locale = new Locale();
+	public lazyLoad: undefined | ( () => Promise<void> );
+
+	constructor(
+		locale: Locale,
+		engine:
+			| 'mathjax'
+			| 'katex'
+			| ( (
+				equation: string,
+				element: HTMLElement,
+				display: boolean,
+			) => void ),
+		lazyLoad: undefined | ( () => Promise<void> ),
+		previewEnabled = false,
+		previewUid: string,
+		previewClassName: Array<string>,
+		popupClassName: Array<string>,
+		katexRenderOptions: KatexOptions
+	) {
 		super( locale );
 
 		const t = locale.t;
-
-		// Create key event & focus trackers
-		this._createKeyAndFocusTrackers();
 
 		// Submit button
 		this.saveButtonView = this._createButton( t( 'Save' ), checkIcon, 'ck-button-save', null );
@@ -85,7 +127,7 @@ export default class MainFormView extends View {
 		} );
 	}
 
-	render() {
+	public override render(): void {
 		super.render();
 
 		// Prevent default form submit event & trigger custom 'submit'
@@ -102,50 +144,53 @@ export default class MainFormView extends View {
 		];
 
 		childViews.forEach( v => {
-			this._focusables.add( v );
-			this.focusTracker.add( v.element );
+			if ( v.element ) {
+				this._focusables.add( v );
+				this.focusTracker.add( v.element );
+			}
 		} );
 
 		// Listen to keypresses inside form element
-		this.keystrokes.listenTo( this.element );
+		if ( this.element ) {
+			this.keystrokes.listenTo( this.element );
+		}
 	}
 
-	focus() {
+	public focus(): void {
 		this._focusCycler.focusFirst();
 	}
 
-	get equation() {
-		return this.mathInputView.fieldView.element.value;
+	public get equation(): string {
+		return this.mathInputView.fieldView.element?.value ?? '';
 	}
 
-	set equation( equation ) {
-		this.mathInputView.fieldView.element.value = equation;
-		if ( this.previewEnabled ) {
+	public set equation( equation: string ) {
+		if ( this.mathInputView.fieldView.element ) {
+			this.mathInputView.fieldView.element.value = equation;
+		}
+		if ( this.previewEnabled && this.mathView ) {
 			this.mathView.value = equation;
 		}
 	}
 
-	_createKeyAndFocusTrackers() {
-		this.focusTracker = new FocusTracker();
-		this.keystrokes = new KeystrokeHandler();
-		this._focusables = new ViewCollection();
+	public focusTracker: FocusTracker = new FocusTracker();
+	public keystrokes: KeystrokeHandler = new KeystrokeHandler();
+	private _focusables = new ViewCollection<FocusableView>();
+	private _focusCycler: FocusCycler = new FocusCycler( {
+		focusables: this._focusables,
+		focusTracker: this.focusTracker,
+		keystrokeHandler: this.keystrokes,
+		actions: {
+			focusPrevious: 'shift + tab',
+			focusNext: 'tab'
+		}
+	} );
 
-		this._focusCycler = new FocusCycler( {
-			focusables: this._focusables,
-			focusTracker: this.focusTracker,
-			keystrokeHandler: this.keystrokes,
-			actions: {
-				focusPrevious: 'shift + tab',
-				focusNext: 'tab'
-			}
-		} );
-	}
-
-	_createMathInput() {
+	private _createMathInput() {
 		const t = this.locale.t;
 
 		// Create equation input
-		const mathInput = new LabeledFieldView( this.locale, createLabeledInputText );
+		const mathInput = new MathInputView( this.locale );
 		const fieldView = mathInput.fieldView;
 		mathInput.infoText = t( 'Insert equation in TeX format.' );
 
@@ -166,7 +211,7 @@ export default class MainFormView extends View {
 					// update display button and preview
 					this.displayButtonView.isOn = params.display;
 				}
-				if ( this.previewEnabled ) {
+				if ( this.previewEnabled && this.mathView ) {
 					// Update preview view
 					this.mathView.value = equationInput;
 				}
@@ -181,7 +226,12 @@ export default class MainFormView extends View {
 		return mathInput;
 	}
 
-	_createButton( label, icon, className, eventName ) {
+	private _createButton(
+		label: string,
+		icon: string,
+		className: string,
+		eventName: string | null
+	) {
 		const button = new ButtonView( this.locale );
 
 		button.set( {
@@ -203,7 +253,7 @@ export default class MainFormView extends View {
 		return button;
 	}
 
-	_createDisplayButton() {
+	private _createDisplayButton() {
 		const t = this.locale.t;
 
 		const switchButton = new SwitchButtonView( this.locale );
@@ -223,7 +273,7 @@ export default class MainFormView extends View {
 			// Toggle state
 			switchButton.isOn = !switchButton.isOn;
 
-			if ( this.previewEnabled ) {
+			if ( this.previewEnabled && this.mathView ) {
 				// Update preview view
 				this.mathView.display = switchButton.isOn;
 			}
